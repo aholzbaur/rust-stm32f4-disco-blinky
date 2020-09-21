@@ -18,20 +18,22 @@ Evaluation hardware STM32F429I-DISC1 (https://www.st.com/content/st_com/en/produ
 ## Software
 
 - Rust v1.46.0
- - cargo install cargo-binutils
- - cargo install cargo-generate
- - rustup component add llvm-tools-preview
- - rustup target add thumbv7m-none-eabi
+  - cargo install cargo-binutils
+  - cargo install cargo-generate
+  - rustup component add llvm-tools-preview
+  - rustup target add thumbv7m-none-eabi
 - GNU Arm Embedded Toolchain 9-2020-q2
 - OpenOCD (xPack release https://github.com/xpack-dev-tools/openocd-xpack/releases/)
 - Visual Studio Code
- - Rust plugin (rust-lang.rust)
- - Cortex-Debug plugin (marus25.cortex-debug)
+  - Rust plugin (rust-lang.rust)
+  - Cortex-Debug plugin (marus25.cortex-debug)
 - Visual Studio 2019 Community Edition (necessary for some build tools)
 - ST-LINK/V2-B USB driver
 
 ## Links
 
 Project was created following the Rust Embedded Book (https://docs.rust-embedded.org/book/) and the Discovery book (https://rust-embedded.github.io/discovery/).
+
 Based partly on the projects https://github.com/rust-embedded/cortex-m-quickstart, https://github.com/adamgreig/stm32f4-demo and https://github.com/rust-embedded/discovery.
+
 Debugging via Visual Studio Code was enabled following the article on https://dev.to/rubberduck/debugging-rust-arm-cortexm-programs-with-visual-studio-code-336h.
