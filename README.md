@@ -1,3 +1,5 @@
+![Build for target](https://github.com/aholzbaur/rust-stm32f4-disco-blinky/workflows/Build%20for%20target/badge.svg)
+
 # Blinky example in Rust on the STM32F429-Discovery board
 
 Small project example to be used as template for embedded software in Rust on the STM32F429-Discovery board.
