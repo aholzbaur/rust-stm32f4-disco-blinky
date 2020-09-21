@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "servertype": "openocd",
+            "cwd": "${workspaceRoot}",
+            "executable": "./target/thumbv7em-none-eabihf/debug/rs-on-f4-disco-test1",
+            "name": "Debug (OpenOCD)",
+            "device": "STM32F429ITZ",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            "runToMain": true,
+            "svdFile": "STM32F429x.svd"
+        }
+    ]
+}
