@@ -11,10 +11,19 @@ fn start() -> ! {
     // Acquire the device peripherals. They can only be taken once ever.
     let device_peripherals = stm32f429::Peripherals::take().unwrap();
 
-    // Get a reference to GPIOA and RCC to save typing.
-    let _gpioa = &device_peripherals.GPIOA;
-    let _rcc = &device_peripherals.RCC;
+    // Get a reference to GPIOG and RCC to save typing.
+    let gpiog = &device_peripherals.GPIOG;
+    let rcc = &device_peripherals.RCC;
     let _tim2 = &device_peripherals.TIM2;
+
+    // Enable the GPIOG clock and set PG13 to be an output
+    rcc.ahb1enr.modify(|_, w| w.gpiogen().enabled());
+    gpiog.moder.modify(|_, w| w.moder13().output());
+
+    let ptr = stm32f429::GPIOG::ptr();
+    unsafe {
+        (*ptr).bsrr.write(|w| w.bs13().set_bit());
+    }
 
     // The main thread can now go to sleep.
     // WFI (wait for interrupt) puts the core in sleep until an interrupt occurs.
