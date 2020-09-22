@@ -14,17 +14,22 @@ fn start() -> ! {
     // Get a reference to GPIOG and RCC to save typing.
     let gpiog = &device_peripherals.GPIOG;
     let rcc = &device_peripherals.RCC;
-    let _tim2 = &device_peripherals.TIM2;
+    let tim2 = &device_peripherals.TIM2;
 
     // Enable the GPIOG clock and set PG13 to be an output
     rcc.ahb1enr.modify(|_, w| w.gpiogen().enabled());
     gpiog.moder.modify(|_, w| w.moder13().output());
 
-    let ptr = stm32f429::GPIOG::ptr();
-    unsafe {
-        (*ptr).bsrr.write(|w| w.bs13().set_bit());
-    }
-
+    // Set up the timer for slow interrupt generation
+    rcc.apb1enr.modify(|_, w| w.tim2en().enabled());
+    tim2.dier.write(|w| w.uie().enabled());
+    tim2.psc.write(|w| w.psc().bits(1000));
+    tim2.arr.write(|w| w.arr().bits(2000));
+    tim2.cr1.write(|w| w.cen().enabled());
+    
+    // Enable the timer interrupt in the NVIC.
+    unsafe { cortex_m::peripheral::NVIC::unmask(stm32f429::Interrupt::TIM2) };
+    
     // The main thread can now go to sleep.
     // WFI (wait for interrupt) puts the core in sleep until an interrupt occurs.
     loop {
@@ -45,4 +50,13 @@ fn TIM2() {
 
     // Clear the UIF bit to indicate the interrupt has been serviced
     unsafe { (*stm32f429::TIM2::ptr()).sr.modify(|_, w| w.uif().clear_bit()) };
+
+    let ptr = stm32f429::GPIOG::ptr();
+    unsafe {
+        if (*ptr).odr.read().odr13().is_high() {
+            (*ptr).bsrr.write(|w| w.br13().set_bit());
+        } else {
+            (*ptr).bsrr.write(|w| w.bs13().set_bit());
+        }
+    }
 }
