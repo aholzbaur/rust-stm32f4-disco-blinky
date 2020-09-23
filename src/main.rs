@@ -1,65 +1,94 @@
 #![no_std]
 #![no_main]
 
-extern crate panic_halt;
+use panic_halt as _;
+use cortex_m_rt::{entry};
+use stm32f4xx_hal as hal;
+use hal::{prelude::*,
+          stm32,
+          interrupt,
+          timer::{Event, Timer},
+          gpio::{gpiog::{PG13, PG14}, Output, PushPull}};
 
-use cortex_m_rt::entry;
-use stm32f4::stm32f429::{self, interrupt};
+static mut TIMER : Option<stm32f4xx_hal::timer::Timer<stm32f4xx_hal::stm32::TIM2>> = None;
+static mut BLINKY : BlinkState = BlinkState::OnOff;
+static mut LED_GREEN : Option<PG13<Output<PushPull>>> = None;
+static mut LED_RED : Option<PG14<Output<PushPull>>> = None;
+
+#[derive(Clone, Copy)]
+enum BlinkState {
+    OnOff,
+    OffOn
+}
 
 #[entry]
 fn start() -> ! {
-    // Acquire the device peripherals. They can only be taken once ever.
-    let device_peripherals = stm32f429::Peripherals::take().unwrap();
-
-    // Get a reference to GPIOG and RCC to save typing.
-    let gpiog = &device_peripherals.GPIOG;
-    let rcc = &device_peripherals.RCC;
-    let tim2 = &device_peripherals.TIM2;
-
-    // Enable the GPIOG clock and set PG13 and PG14 to be outputs
-    rcc.ahb1enr.modify(|_, w| w.gpiogen().enabled());
-    gpiog.moder.modify(|_, w| w.moder13().output());
-    gpiog.moder.modify(|_, w| w.moder14().output());
-
-    // Set up the timer for slow interrupt generation
-    rcc.apb1enr.modify(|_, w| w.tim2en().enabled());
-    tim2.dier.write(|w| w.uie().enabled());
-    tim2.psc.write(|w| w.psc().bits(2000));
-    tim2.arr.write(|w| w.arr().bits(2000));
-    tim2.cr1.write(|w| w.cen().enabled());
+    let device_periphs = stm32::Peripherals::take().unwrap();
     
-    // Enable the timer interrupt in the NVIC.
-    unsafe { cortex_m::peripheral::NVIC::unmask(stm32f429::Interrupt::TIM2) };
+    device_periphs.RCC.apb2enr.write(|w| w.syscfgen().enabled());
+
+    let rcc_periph = device_periphs.RCC.constrain();
     
-    // The main thread can now go to sleep.
-    // WFI (wait for interrupt) puts the core in sleep until an interrupt occurs.
+    let clocks = rcc_periph.cfgr
+        .use_hse(8.mhz()) // discovery board has 8 MHz crystal for HSE
+        .hclk(180.mhz())
+        .sysclk(180.mhz())
+        .pclk1(45.mhz())
+        .pclk2(90.mhz())
+        .freeze();
+
+    let gpiog_periph = device_periphs.GPIOG.split();
+    
+    unsafe {
+        LED_GREEN = Some(gpiog_periph.pg13.into_push_pull_output());
+        LED_RED = Some(gpiog_periph.pg14.into_push_pull_output());
+    
+        // Create a 1s periodic interrupt from TIM2
+        TIMER = Some(Timer::tim2(device_periphs.TIM2, 1.hz(), clocks));
+
+        // Enable interrupt
+        stm32::NVIC::unpend(hal::stm32::Interrupt::TIM2);
+
+        if let Some(ref mut led_green) = LED_GREEN {
+            led_green.set_high().unwrap();
+        }
+        if let Some(ref mut led_red) = LED_RED {
+            led_red.set_low().unwrap();
+        }
+        
+        if let Some(ref mut tim) = TIMER {
+            tim.listen(Event::TimeOut);
+            tim.clear_interrupt(Event::TimeOut);
+        }
+        
+        stm32::NVIC::unmask(hal::stm32::Interrupt::TIM2);
+    }
+
     loop {
+        // The main thread can now go to sleep.
+        // WFI (wait for interrupt) puts the core in sleep until an interrupt occurs.
         cortex_m::asm::wfi();
     }
 }
 
-/// Interrupt handler for TIM2
 #[interrupt]
 fn TIM2() {
-    // NOTE(unsafe): We have to use unsafe to access the peripheral
-    // registers in this interrupt handler because we already used `take()`
-    // in the main code. In this case all our uses are safe, not least because
-    // the main thread only calls `wfi()` after enabling the interrupt, so
-    // no race conditions or other unsafe behaviour is possible.
-    // For ways to avoid using unsafe here, consult the Concurrency chapter:
-    // https://rust-embedded.github.io/book/concurrency/concurrency.html
-
-    // Clear the UIF bit to indicate the interrupt has been serviced
-    unsafe { (*stm32f429::TIM2::ptr()).sr.modify(|_, w| w.uif().clear_bit()) };
-
-    let ptr = stm32f429::GPIOG::ptr();
     unsafe {
-        if (*ptr).odr.read().odr13().is_high() {
-            (*ptr).bsrr.write(|w| w.br13().set_bit());
-            (*ptr).bsrr.write(|w| w.bs14().set_bit());
-        } else {
-            (*ptr).bsrr.write(|w| w.bs13().set_bit());
-            (*ptr).bsrr.write(|w| w.br14().set_bit());
+        if let (Some(tim), Some(led_green), Some(led_red)) = (&mut TIMER, &mut LED_GREEN, &mut LED_RED) {
+            tim.clear_interrupt(Event::TimeOut);
+
+            match BLINKY {
+                BlinkState::OnOff => {
+                    BLINKY = BlinkState::OffOn;
+                    led_green.set_low().unwrap();
+                    led_red.set_high().unwrap();
+                },
+                BlinkState::OffOn => {
+                    BLINKY = BlinkState::OnOff;
+                    led_green.set_high().unwrap();
+                    led_red.set_low().unwrap();
+                }
+            }
         }
     }
 }
