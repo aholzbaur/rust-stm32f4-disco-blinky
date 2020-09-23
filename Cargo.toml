@@ -6,16 +6,17 @@ name = "rs-on-f4-disco-test1"
 version = "0.0.1"
 
 [dependencies]
-cortex-m = "0.6.0"
-nb = "1.0.0"
-cortex-m-rt = "0.6.10"
-cortex-m-semihosting = "0.3.3"
-panic-halt = "0.2.0"
-stm32f429i-disc = "0.3.0"
-embedded-hal = "0.2.4"
+cortex-m = ">=0.6.3"
+cortex-m-rt = ">=0.6.10"
+cortex-m-semihosting = ">=0.3.3"
+panic-halt = ">=0.2.0"
 
 [dependencies.stm32f4]
-version = "0.12.0"
+version = ">=0.12.0"
+features = ["rt", "stm32f429"]
+
+[dependencies.stm32f4xx-hal]
+version = ">=0.8.3"
 features = ["rt", "stm32f429"]
 
 [[bin]]
