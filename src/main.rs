@@ -2,6 +2,9 @@
 #![no_main]
 
 use panic_halt as _;
+use core::cell::{Cell, RefCell};
+use core::ops::DerefMut;
+use cortex_m::interrupt::{free,Mutex};
 use cortex_m_rt::{entry};
 use stm32f4xx_hal as hal;
 use hal::{prelude::*,
@@ -10,10 +13,10 @@ use hal::{prelude::*,
           timer::{Event, Timer},
           gpio::{gpiog::{PG13, PG14}, Output, PushPull}};
 
-static mut TIMER : Option<stm32f4xx_hal::timer::Timer<stm32f4xx_hal::stm32::TIM2>> = None;
-static mut BLINKY : BlinkState = BlinkState::OnOff;
-static mut LED_GREEN : Option<PG13<Output<PushPull>>> = None;
-static mut LED_RED : Option<PG14<Output<PushPull>>> = None;
+static BLINKY : Mutex<Cell<BlinkState>> = Mutex::new(Cell::new(BlinkState::OnOff));
+static TIMER: Mutex<RefCell<Option<Timer<stm32::TIM2>>>> = Mutex::new(RefCell::new(None));
+static LED_GREEN : Mutex<RefCell<Option<PG13<Output<PushPull>>>>> = Mutex::new(RefCell::new(None));
+static LED_RED : Mutex<RefCell<Option<PG14<Output<PushPull>>>>> = Mutex::new(RefCell::new(None));
 
 #[derive(Clone, Copy)]
 enum BlinkState {
@@ -39,30 +42,27 @@ fn start() -> ! {
 
     let gpiog_periph = device_periphs.GPIOG.split();
     
-    unsafe {
-        LED_GREEN = Some(gpiog_periph.pg13.into_push_pull_output());
-        LED_RED = Some(gpiog_periph.pg14.into_push_pull_output());
-    
-        // Create a 1s periodic interrupt from TIM2
-        TIMER = Some(Timer::tim2(device_periphs.TIM2, 1.hz(), clocks));
+    let mut _led_green = gpiog_periph.pg13.into_push_pull_output();
+    _led_green.set_high().unwrap();
 
-        // Enable interrupt
-        stm32::NVIC::unpend(hal::stm32::Interrupt::TIM2);
+    let mut _led_red = gpiog_periph.pg14.into_push_pull_output();
+    _led_red.set_low().unwrap();
 
-        if let Some(ref mut led_green) = LED_GREEN {
-            led_green.set_high().unwrap();
-        }
-        if let Some(ref mut led_red) = LED_RED {
-            led_red.set_low().unwrap();
-        }
-        
-        if let Some(ref mut tim) = TIMER {
-            tim.listen(Event::TimeOut);
-            tim.clear_interrupt(Event::TimeOut);
-        }
-        
-        stm32::NVIC::unmask(hal::stm32::Interrupt::TIM2);
-    }
+    // Create a 1s periodic interrupt from TIM2
+    let mut _timer = Timer::tim2(device_periphs.TIM2, 1.hz(), clocks);
+
+    _timer.listen(Event::TimeOut);
+    _timer.clear_interrupt(Event::TimeOut);
+
+    free(|cs| {
+        TIMER.borrow(cs).replace(Some(_timer));
+        LED_GREEN.borrow(cs).replace(Some(_led_green));
+        LED_RED.borrow(cs).replace(Some(_led_red));
+    });
+
+    // Enable interrupt
+    stm32::NVIC::unpend(hal::stm32::Interrupt::TIM2);
+    unsafe{ stm32::NVIC::unmask(hal::stm32::Interrupt::TIM2) };
 
     loop {
         // The main thread can now go to sleep.
@@ -73,22 +73,21 @@ fn start() -> ! {
 
 #[interrupt]
 fn TIM2() {
-    unsafe {
-        if let (Some(tim), Some(led_green), Some(led_red)) = (&mut TIMER, &mut LED_GREEN, &mut LED_RED) {
-            tim.clear_interrupt(Event::TimeOut);
-
-            match BLINKY {
+    free(|cs| {
+        if let (Some(ref mut _timer), Some(ref mut _led_green), Some(ref mut _led_red)) = (TIMER.borrow(cs).borrow_mut().deref_mut(), LED_GREEN.borrow(cs).borrow_mut().deref_mut(), LED_RED.borrow(cs).borrow_mut().deref_mut()) {
+            _timer.clear_interrupt(Event::TimeOut);
+            match BLINKY.borrow(cs).get() {
                 BlinkState::OnOff => {
-                    BLINKY = BlinkState::OffOn;
-                    led_green.set_low().unwrap();
-                    led_red.set_high().unwrap();
+                    BLINKY.borrow(cs).replace(BlinkState::OffOn);
+                    _led_green.set_low().unwrap();
+                    _led_red.set_high().unwrap();
                 },
                 BlinkState::OffOn => {
-                    BLINKY = BlinkState::OnOff;
-                    led_green.set_high().unwrap();
-                    led_red.set_low().unwrap();
+                    BLINKY.borrow(cs).replace(BlinkState::OnOff);
+                    _led_green.set_high().unwrap();
+                    _led_red.set_low().unwrap();
                 }
             }
         }
-    }
+    });
 }
