@@ -20,7 +20,7 @@ version = ">=0.8.3"
 features = ["rt", "stm32f429"]
 
 [[bin]]
-name = "rs-on-f4-disco-test1"
+name = "rust-stm32f4-disco-blinky"
 test = false
 bench = false
 
