@@ -7,9 +7,9 @@
             "preLaunchTask": "build",
             "servertype": "openocd",
             "cwd": "${workspaceRoot}",
-            "executable": "./target/thumbv7em-none-eabihf/debug/rs-on-f4-disco-test1",
+            "executable": "./target/thumbv7em-none-eabihf/debug/rust-stm32f4-disco-blinky",
             "name": "Debug (OpenOCD)",
-            "device": "STM32F429ITZ",
+            "device": "STM32F429ZIT6",
             "configFiles": [
                 "interface/stlink.cfg",
                 "target/stm32f4x.cfg"
