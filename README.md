@@ -30,6 +30,8 @@ Evaluation hardware STM32F429I-DISC1 (https://www.st.com/content/st_com/en/produ
 - Visual Studio 2019 Community Edition (necessary for some build tools)
 - ST-LINK/V2-B USB driver
 
+If everything is installed properly, the workspace can be opened in VS Code and a hit on F5 should build the project without errors or warnings and automatically start a debug session. The program should be halted at the breakpoint at main().
+
 ## Links
 
 Project was created following the Rust Embedded Book (https://docs.rust-embedded.org/book/) and the Discovery book (https://rust-embedded.github.io/discovery/).
