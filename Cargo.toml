@@ -2,8 +2,8 @@
 authors = ["aholzbaur <71641117+aholzbaur@users.noreply.github.com>"]
 edition = "2018"
 readme = "README.md"
-name = "rs-on-f4-disco-test1"
-version = "0.0.1"
+name = "rust-stm32f4-disco-blinky"
+version = "0.1.0"
 
 [dependencies]
 cortex-m = ">=0.6.3"
