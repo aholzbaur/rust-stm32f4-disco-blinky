@@ -17,10 +17,10 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
        toolchain: stable
-       target: thumbv7m-none-eabi
+       target: thumbv7em-none-eabihf
        override: true
     - uses: actions-rs/cargo@v1
       with:
        use-cross: true
        command: build
-       args: --target thumbv7m-none-eabi
+       args: --target thumbv7em-none-eabihf
