@@ -16,7 +16,7 @@ Evaluation hardware STM32F429I-DISC1 (https://www.st.com/content/st_com/en/produ
  - this hardware revision has onboard ST-LINK/V2-B
 
 ## Software
-
+### Windows (as of 09/2020)
 - Rust v1.46.0
   - cargo install cargo-binutils
   - cargo install cargo-generate
@@ -31,6 +31,41 @@ Evaluation hardware STM32F429I-DISC1 (https://www.st.com/content/st_com/en/produ
 - ST-LINK/V2-B USB driver
 
 If everything is installed properly, the workspace can be opened in VS Code and a hit on F5 should build the project without errors or warnings and automatically start a debug session. The program should be halted at the breakpoint at main().
+
+### Ubuntu 21 (as of 02/2022)
+Not sure, if these are really necessary here:
+
+`sudo apt-get install gcc make clang`
+
+Required installation:
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+cargo install cargo-binutils
+```
+
+Building cargo-generate requires (at least) libssl-dev to be installed:
+
+```
+sudo apt-get install libssl-dev
+cargo install cargo-generate
+rustup component add llvm-tools-preview
+```
+Verify installation for x86_64 according to https://docs.rust-embedded.org/discovery/f3discovery/03-setup/index.html:
+
+```
+cargo new first-test
+cargo cd first-test
+cargo run
+cargo size -- --version
+```
+
+Then add the embedded toolchain:
+
+```
+sudo apt-get install gdb-multiarch minicom openocd
+rustup target add thumbv7em-none-eabihf
+```
 
 ## Links
 
