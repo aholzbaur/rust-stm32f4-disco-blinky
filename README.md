@@ -60,12 +60,25 @@ cargo run
 cargo size -- --version
 ```
 
-Then add the embedded toolchain:
+Then install the embedded toolchain: `rustup target add thumbv7em-none-eabihf`
 
+This project should now be able to be built:
 ```
-sudo apt-get install gdb-multiarch minicom openocd
-rustup target add thumbv7em-none-eabihf
+cd rust-stm32f4-disco-blinky
+cargo build
 ```
+
+To debug, download the latest ARM GNU Embedded Toolchain (in this case 10.3-2021.10) and run:
+```
+sudo tar -xvjf gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2 -C /usr/share/
+sudo ln -s /usr/share/gcc-arm-none-eabi-10.3-2021.10/bin/* /usr/bin/
+sudo apt-get install libncurses5
+arm-none-eabi-gcc --version
+```
+
+Now follow https://docs.rust-embedded.org/discovery/f3discovery/03-setup/linux.html#udev-rules and https://docs.rust-embedded.org/discovery/f3discovery/03-setup/verify.html until OpenOCD can connect to ST-Link: `openocd -f interface/stlink.cfg -f target/stm32f4x.cfg` and keep it running in a separate terminal.
+
+In another terminal, calling `arm-none-eabi-gdb -q -ex "target remote :3333" target/thumbv7em-none-eabihf/debug/rust-stm32f4-disco-blinky` should successfully flash the controller and halt it (i.e. at Reset()).
 
 ## Links
 
