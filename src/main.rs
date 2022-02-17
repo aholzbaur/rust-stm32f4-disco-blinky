@@ -43,10 +43,10 @@ fn start() -> ! {
     let gpiog_periph = device_periphs.GPIOG.split();
     
     let mut _led_green = gpiog_periph.pg13.into_push_pull_output();
-    _led_green.set_high().unwrap();
+    _led_green.set_high();
 
     let mut _led_red = gpiog_periph.pg14.into_push_pull_output();
-    _led_red.set_low().unwrap();
+    _led_red.set_low();
 
     // Create a 1s periodic interrupt from TIM2
     let mut _timer = Timer::tim2(device_periphs.TIM2, 1.hz(), clocks);
@@ -79,13 +79,13 @@ fn TIM2() {
             match BLINKY.borrow(cs).get() {
                 BlinkState::OnOff => {
                     BLINKY.borrow(cs).replace(BlinkState::OffOn);
-                    _led_green.set_low().unwrap();
-                    _led_red.set_high().unwrap();
+                    _led_green.set_low();
+                    _led_red.set_high();
                 },
                 BlinkState::OffOn => {
                     BLINKY.borrow(cs).replace(BlinkState::OnOff);
-                    _led_green.set_high().unwrap();
-                    _led_red.set_low().unwrap();
+                    _led_green.set_high();
+                    _led_red.set_low();
                 }
             }
         }
