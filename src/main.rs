@@ -4,17 +4,16 @@
 use panic_halt as _;
 use core::cell::{Cell, RefCell};
 use core::ops::DerefMut;
-use cortex_m::interrupt::{free,Mutex};
+use cortex_m::interrupt::{free, Mutex};
 use cortex_m_rt::{entry};
 use stm32f4xx_hal as hal;
 use hal::{prelude::*,
-          stm32,
-          interrupt,
+          pac::{interrupt, Interrupt, Peripherals, TIM2},
           timer::{Event, Timer},
           gpio::{gpiog::{PG13, PG14}, Output, PushPull}};
 
 static BLINKY : Mutex<Cell<BlinkState>> = Mutex::new(Cell::new(BlinkState::OnOff));
-static TIMER: Mutex<RefCell<Option<Timer<stm32::TIM2>>>> = Mutex::new(RefCell::new(None));
+static TIMER: Mutex<RefCell<Option<Timer<TIM2>>>> = Mutex::new(RefCell::new(None));
 static LED_GREEN : Mutex<RefCell<Option<PG13<Output<PushPull>>>>> = Mutex::new(RefCell::new(None));
 static LED_RED : Mutex<RefCell<Option<PG14<Output<PushPull>>>>> = Mutex::new(RefCell::new(None));
 
@@ -26,7 +25,7 @@ enum BlinkState {
 
 #[entry]
 fn start() -> ! {
-    let device_periphs = stm32::Peripherals::take().unwrap();
+    let device_periphs = Peripherals::take().unwrap();
     
     device_periphs.RCC.apb2enr.write(|w| w.syscfgen().enabled());
 
@@ -61,8 +60,8 @@ fn start() -> ! {
     });
 
     // Enable interrupt
-    stm32::NVIC::unpend(hal::stm32::Interrupt::TIM2);
-    unsafe{ stm32::NVIC::unmask(hal::stm32::Interrupt::TIM2) };
+    cortex_m::peripheral::NVIC::unpend(Interrupt::TIM2);
+    unsafe{ cortex_m::peripheral::NVIC::unmask(Interrupt::TIM2) };
 
     loop {
         // The main thread can now go to sleep.
