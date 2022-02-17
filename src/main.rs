@@ -9,11 +9,11 @@ use cortex_m_rt::{entry};
 use stm32f4xx_hal as hal;
 use hal::{prelude::*,
           pac::{interrupt, Interrupt, Peripherals, TIM2},
-          timer::{Event, Timer},
+          timer::{Event, CountDownTimer, Timer},
           gpio::{gpiog::{PG13, PG14}, Output, PushPull}};
 
 static BLINKY : Mutex<Cell<BlinkState>> = Mutex::new(Cell::new(BlinkState::OnOff));
-static TIMER: Mutex<RefCell<Option<Timer<TIM2>>>> = Mutex::new(RefCell::new(None));
+static TIMER: Mutex<RefCell<Option<CountDownTimer<TIM2>>>> = Mutex::new(RefCell::new(None));
 static LED_GREEN : Mutex<RefCell<Option<PG13<Output<PushPull>>>>> = Mutex::new(RefCell::new(None));
 static LED_RED : Mutex<RefCell<Option<PG14<Output<PushPull>>>>> = Mutex::new(RefCell::new(None));
 
@@ -48,7 +48,7 @@ fn start() -> ! {
     _led_red.set_low();
 
     // Create a 1s periodic interrupt from TIM2
-    let mut _timer = Timer::tim2(device_periphs.TIM2, 1.hz(), clocks);
+    let mut _timer = Timer::new(device_periphs.TIM2, &clocks).start_count_down(1.hz());
 
     _timer.listen(Event::TimeOut);
     _timer.clear_interrupt(Event::TimeOut);
