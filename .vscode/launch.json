@@ -14,7 +14,7 @@
                 "interface/stlink.cfg",
                 "target/stm32f4x.cfg"
             ],
-            "runToEntryPoint": "start",
+            "runToEntryPoint": "main",
             "svdFile": "STM32F429x.svd"
         }
     ]

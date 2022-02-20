@@ -24,7 +24,7 @@ enum BlinkState {
 }
 
 #[entry]
-fn start() -> ! {
+fn main() -> ! {
     let device_periphs = Peripherals::take().unwrap();
 
     device_periphs.RCC.apb2enr.write(|w| w.syscfgen().enabled());

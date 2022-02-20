@@ -11,7 +11,7 @@ break DefaultHandler
 break HardFault
 break rust_begin_unwind
 
-break start
+break main
 
 monitor arm semihosting enable
 
@@ -20,5 +20,5 @@ load
 # start the process but immediately halt the processor
 #stepi
 
-# run to next breakpoint (start)
+# run to next breakpoint (main)
 continue
