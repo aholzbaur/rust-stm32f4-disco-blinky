@@ -26,12 +26,10 @@ enum BlinkState {
 #[entry]
 fn start() -> ! {
     let device_periphs = Peripherals::take().unwrap();
-    
+
     device_periphs.RCC.apb2enr.write(|w| w.syscfgen().enabled());
 
-    let rcc_periph = device_periphs.RCC.constrain();
-    
-    let clocks = rcc_periph.cfgr
+    let clocks = device_periphs.RCC.constrain().cfgr
         .use_hse(8.mhz()) // discovery board has 8 MHz crystal for HSE
         .hclk(180.mhz())
         .sysclk(180.mhz())
@@ -40,7 +38,7 @@ fn start() -> ! {
         .freeze();
 
     let gpiog_periph = device_periphs.GPIOG.split();
-    
+
     let mut _led_green = gpiog_periph.pg13.into_push_pull_output();
     _led_green.set_high();
 
@@ -88,5 +86,5 @@ fn TIM2() {
                 }
             }
         }
-    });
+   });
 }
